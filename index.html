@@ -64,6 +64,7 @@ button{width:100%}
 <section id="result" class="card result hidden"><div class="trophy">🏆</div><h2 id="resultTitle"></h2><div id="finalScore" class="finalscore">0</div><p id="resultText" class="sub"></p><button id="restart" class="secondary">Main Lagi</button></section>
 </div>
 <script>
+const SHEET_URL="https://script.google.com/macros/s/AKfycbyLKpLrb07av-nFQ8oPrOGVd64052fsU6mDi9doMsyJhk0-vCBQJeCEZ_tW_Iz2pb4/exec";
 const missions=[
 {a:2.28,u:"cm",img:"m1.jpg",q:"Berapakah hasil pembacaan skala pada gambar berikut?"},
 {a:5.78,u:"cm",img:"m2.jpg",q:"Berapakah hasil pembacaan skala pada gambar berikut?"},
@@ -78,16 +79,18 @@ const missions=[
 {a:5.35,u:"cm",img:"m11.jpg",q:"Berapakah hasil pembacaan skala pada gambar berikut?"},
 {a:3.87,u:"mm",img:"m12.jpg",q:"Berapakah hasil pembacaan skala pada gambar berikut?"}
 ];
-let i=0,score=0,time=30,timer=null,student="";
+let i=0,score=0,time=30,timer=null,student="",startedAt=0;
 const $=id=>document.getElementById(id);
 function fmt(n){return n.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function durationText(){const s=Math.max(0,Math.round((Date.now()-startedAt)/1000));return String(Math.floor(s/60)).padStart(2,'0')+":"+String(s%60).padStart(2,'0')}
 function startTimer(){clearInterval(timer);time=30;$("timer").textContent=time+" detik";timer=setInterval(()=>{time--;$("timer").textContent=time+" detik";if(time<=0){clearInterval(timer);const x=missions[i];$("feedback").innerHTML='<span class="bad">⏰ Waktu habis. Kunci: '+fmt(x.a)+' '+x.u+'</span>';$("submit").disabled=true;$("answer").disabled=true;setTimeout(next,1100)}},1000)}
-function render(){const x=missions[i];$("mission").textContent=`Misi ${i+1}/12`;$("bar").style.width=(i/12*100)+"%";$("question").textContent=x.q;$("missionImg").src=x.img;$("unit").textContent=x.u;$("answer").value="";$("answer").disabled=false;$("submit").disabled=false;$("feedback").textContent="";startTimer();$("answer").focus()}
+function render(){const x=missions[i];$("mission").textContent=`Misi ${i+1}/12`;$("bar").style.width=(i/12*100)+"%";$("question").textContent=x.q;$("missionImg").src=x.img;$("unit").textContent=x.u;$("answer").value="";$("answer").disabled=false;$("submit").disabled=false;$("feedback").textContent="";startTimer()}
 function next(){clearInterval(timer);i++;if(i>=missions.length){finish();return}render()}
-function finish(){clearInterval(timer);$("game").classList.add("hidden");$("result").classList.remove("hidden");$("bar").style.width="100%";score+=200;$("score").textContent=score;$("finalScore").textContent=score+" poin";$("resultTitle").textContent=score>=1400?"MEASUREMENT MASTER! 🥇":score>=1000?"Hebat! 🥈":"Misi selesai! 💪";$("resultText").textContent=student+", kamu mendapatkan bonus penyelesaian +200 poin."}
-$("startForm").addEventListener("submit",e=>{e.preventDefault();student=$("name").value.trim();if(!student)return;i=0;score=0;$("score").textContent="0";$("start").classList.add("hidden");$("game").classList.remove("hidden");render()});
+function sendResult(){const data={nama:student,skor:score,benar:Math.round((score>=0?Math.min(12,Math.floor(score/100)):0)),salah:0,durasi:durationText()};data.salah=12-data.benar;try{fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data),keepalive:true}).catch(()=>{});}catch(e){}}
+function finish(){clearInterval(timer);sendResult();$("game").classList.add("hidden");$("result").classList.remove("hidden");$("bar").style.width="100%";score+=200;$("score").textContent=score;$("finalScore").textContent=score+" poin";$("resultTitle").textContent=score>=1400?"MEASUREMENT MASTER! 🥇":score>=1000?"Hebat! 🥈":"Misi selesai! 💪";$("resultText").textContent=student+", kamu mendapatkan bonus penyelesaian +200 poin."}
+$("startForm").addEventListener("submit",e=>{e.preventDefault();student=$("name").value.trim();if(!student)return;i=0;score=0;startedAt=Date.now();$("score").textContent="0";$("start").classList.add("hidden");$("game").classList.remove("hidden");render()});
 $("submit").addEventListener("click",()=>{clearInterval(timer);const v=Number($("answer").value.trim().replace(",",".")),x=missions[i];if(!Number.isFinite(v)){$("feedback").innerHTML='<span class="bad">Masukkan angka yang valid.</span>';startTimer();return}if(Math.abs(v-x.a)<.005){score+=100;$("score").textContent=score;$("feedback").innerHTML='<span class="good">🎯 BENAR! +100 poin</span>';$("submit").disabled=true;$("answer").disabled=true;setTimeout(next,700)}else{$("feedback").innerHTML='<span class="bad">❌ Belum tepat. Coba baca kembali skala pada gambar.</span>';startTimer()}});
 $("answer").addEventListener("keydown",e=>{if(e.key==="Enter")$("submit").click()});
-$("restart").addEventListener("click",()=>{i=0;score=0;$("score").textContent="0";$("result").classList.add("hidden");$("game").classList.remove("hidden");render()});
+$("restart").addEventListener("click",()=>{i=0;score=0;$("score").textContent="0";$("result").classList.add("hidden");$("start").classList.remove("hidden");$("name").focus()});
 </script>
 </body></html>
