@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Master of Measurement</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f7fb;margin:0;color:#172033}
+.wrap{max-width:760px;margin:0 auto;padding:24px}
+.card{background:white;border-radius:18px;padding:22px;box-shadow:0 6px 22px #0001;margin:14px 0}
+h1{margin:0 0 6px}.muted{color:#657085}.score{font-size:30px;font-weight:700}
+input{box-sizing:border-box;width:100%;padding:13px;border:1px solid #ccd3df;border-radius:10px;font-size:16px}
+button{padding:13px 18px;border:0;border-radius:10px;background:#2457d6;color:white;font-weight:700;cursor:pointer}
+button.secondary{background:#e9edf5;color:#172033}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.progress{height:10px;background:#e5e9f0;border-radius:99px;overflow:hidden}.bar{height:100%;background:#2457d6;width:0}
+.scale{height:55px;border-bottom:3px solid #172033;background:repeating-linear-gradient(90deg,transparent 0 9px,#7d8798 9px 10px);position:relative}
+.scale:after{content:"";position:absolute;left:0;right:0;bottom:0;height:25px;background:repeating-linear-gradient(90deg,transparent 0 49px,#172033 49px 51px,transparent 51px 100px)}
+.micro{height:58px;border:3px solid #172033;border-radius:12px;background:repeating-linear-gradient(90deg,transparent 0 11px,#7d8798 11px 12px)}
+.good{color:#16743b;font-weight:700}.bad{color:#b3261e;font-weight:700}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="row"><div><div class="muted">FISIKA • PENGUKURAN</div><h1>🏆 Master of Measurement</h1><div class="muted">Taklukkan 6 misi jangka sorong & mikrometer sekrup.</div></div><div><div class="muted">SKOR</div><div id="score" class="score">0</div></div></div>
+
+<section id="start" class="card">
+<h2>Siap menjadi Measurement Master?</h2>
+<p class="muted">Masukkan nama untuk memulai.</p>
+<form id="startForm"><input id="name" required maxlength="40" placeholder="Nama siswa"><br><br><button>Mulai Misi 🚀</button></form>
+</section>
+
+<section id="game" class="hidden">
+<div class="row"><b id="mission">Misi 1/6</b><span id="timer">30 detik</span></div>
+<div class="progress"><div id="bar" class="bar"></div></div>
+<div class="card">
+<div class="row"><div><b id="instrument"></b><div id="difficulty" class="muted"></div></div><b>+100 poin</b></div>
+<h2 id="question"></h2>
+<div id="visual"></div>
+<form id="answerForm">
+<p><label for="answer">Jawaban dalam mm</label></p>
+<input id="answer" inputmode="decimal" placeholder="Contoh: 12,4">
+<br><br><button>Kunci Jawaban 🔐</button>
+</form>
+<p id="feedback" aria-live="polite"></p>
+</div>
+</section>
+
+<section id="result" class="card hidden" style="text-align:center">
+<div style="font-size:48px">🏆</div><h2 id="resultTitle"></h2><p id="resultText"></p>
+<button id="restart" class="secondary">Main Lagi</button>
+</section>
+</div>
+<script>
+const missions=[
+{tool:"JANGKA SORONG",d:"Level 1 • Ketelitian 0,1 mm",q:"Skala utama 12,0 mm. Garis nonius ke-4 tepat berimpit. Berapa hasil pengukuran?",a:12.4,t:"j",b:"12,0",n:4},
+{tool:"JANGKA SORONG",d:"Level 2 • Ketelitian 0,1 mm",q:"Skala utama 18,0 mm. Garis nonius ke-7 tepat berimpit. Berapa hasil pengukuran?",a:18.7,t:"j",b:"18,0",n:7},
+{tool:"JANGKA SORONG",d:"Level 3 • Ketelitian 0,1 mm",q:"Skala utama 23,0 mm. Garis nonius ke-6 tepat berimpit. Berapa hasil pengukuran?",a:23.6,t:"j",b:"23,0",n:6},
+{tool:"MIKROMETER SEKRUP",d:"Level 1 • Ketelitian 0,01 mm",q:"Skala utama 5,5 mm. Skala putar menunjukkan 32. Berapa hasil pengukuran?",a:5.82,t:"m",b:"5,5",n:32},
+{tool:"MIKROMETER SEKRUP",d:"Level 2 • Ketelitian 0,01 mm",q:"Skala utama 8,0 mm. Skala putar menunjukkan 17. Berapa hasil pengukuran?",a:8.17,t:"m",b:"8,0",n:17},
+{tool:"MIKROMETER SEKRUP",d:"Level 3 • Ketelitian 0,01 mm",q:"Skala utama 14,5 mm. Skala putar menunjukkan 28. Berapa hasil pengukuran?",a:14.78,t:"m",b:"14,5",n:28}
+];
+let i=0,score=0,time=30,timer,name="";
+const $=id=>document.getElementById(id);
+function render(){
+ const x=missions[i]; $("mission").textContent=`Misi ${i+1}/6`;
+ $("bar").style.width=(i/6*100)+"%"; $("instrument").textContent=x.tool;
+ $("difficulty").textContent=x.d; $("question").textContent=x.q; $("feedback").textContent="";
+ $("answer").value="";
+ $("visual").innerHTML=x.t==="j"
+ ? `<div class="card"><div class="muted">SKALA UTAMA</div><div class="scale"></div><p><b>Skala utama:</b> ${x.b} mm &nbsp; + &nbsp; <b>Nonius:</b> ${x.n} × 0,1 mm</p></div>`
+ : `<div class="card"><div class="muted">SKALA MIKROMETER</div><div class="micro"></div><p><b>Skala utama:</b> ${x.b} mm &nbsp; + &nbsp; <b>Skala putar:</b> ${x.n} × 0,01 mm</p></div>`;
+ startTimer(); $("answer").focus();
+}
+function startTimer(){
+ clearInterval(timer); time=30; $("timer").textContent=time+" detik";
+ timer=setInterval(()=>{time--; $("timer").textContent=time+" detik";
+ if(time<=0){clearInterval(timer); $("feedback").innerHTML=`<span class="bad">⏰ Waktu habis. Jawaban: ${String(missions[i].a).replace(".",",")} mm</span>`;setTimeout(next,1000)}},1000);
+}
+function next(){clearInterval(timer);i++;if(i>=missions.length)finish();else render()}
+function finish(){
+ $("game").classList.add("hidden");$("result").classList.remove("hidden");score+=200;
+ $("score").textContent=score;$("bar").style.width="100%";
+ $("resultTitle").textContent=score>=700?"MEASUREMENT MASTER! 🥇":score>=500?"Hebat! Hampir Master! 🥈":"Misi selesai! 💪";
+ $("resultText").textContent=`${name}, skor akhir kamu ${score} poin. Bonus penyelesaian +200 poin.`;
+}
+$("startForm").addEventListener("submit",e=>{e.preventDefault();name=$("name").value.trim();i=0;score=0;$("score").textContent=0;$("start").classList.add("hidden");$("game").classList.remove("hidden");render()});
+$("answerForm").addEventListener("submit",e=>{e.preventDefault();clearInterval(timer);let v=Number($("answer").value.trim().replace(",",".")),x=missions[i];
+if(!Number.isFinite(v)){ $("feedback").innerHTML='<span class="bad">Masukkan angka yang valid.</span>';startTimer();return}
+if(Math.abs(v-x.a)<.001){score+=100;$("score").textContent=score;$("feedback").innerHTML='<span class="good">🎯 BENAR! +100 poin</span>';setTimeout(next,650)}
+else{$("feedback").innerHTML='<span class="bad">❌ Belum tepat. Ingat: hasil = skala utama + skala berikutnya.</span>';startTimer()}});
+$("restart").addEventListener("click",()=>{i=0;score=0;$("score").textContent=0;$("result").classList.add("hidden");$("game").classList.remove("hidden");render()});
+</script>
+</body>
+</html>
